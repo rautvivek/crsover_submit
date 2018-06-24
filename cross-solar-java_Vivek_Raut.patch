@@ -1,0 +1,738 @@
+From 27c17fc4447ff713c84f95afb14038aa3a3f8341 Mon Sep 17 00:00:00 2001
+From: vivek raut <vivek.raut999@gmail.com>
+Date: Sun, 24 Jun 2018 17:16:13 +0530
+Subject: [PATCH 1/2] My submission
+XOV: XO_0_0_1
+
+---
+ gradlew                                       |  0
+ .../techtrial/controller/PanelController.java | 36 ++++++++-----
+ .../techtrial/dto/DailyElectricity.java       | 11 +++-
+ .../exceptions/GlobalExceptionHandler.java    |  0
+ .../techtrial/model/HourlyElectricity.java    |  3 ++
+ .../com/crossover/techtrial/model/Panel.java  |  6 +--
+ .../repository/DailyElectricityMapper.java    | 37 +++++++++++++
+ .../DailyElectricityRepository.java           | 13 +++++
+ .../DailyElectricityRepositoryImpl.java       | 28 ++++++++++
+ .../service/DailyElectricityService.java      | 12 +++++
+ .../service/DailyElectricityServiceImpl.java  | 23 ++++++++
+ src/main/resources/application.properties     |  2 +-
+ .../db/changelog/db.changelog-1.0.xml         |  0
+ .../db/changelog/db.changelog-master.xml      |  0
+ .../controller/PanelControllerTest.java       | 53 +++++++++++++++++--
+ .../TestDailyElectricityrepository.java       | 38 +++++++++++++
+ .../TestHourlyElectricityRepository.java      | 35 ++++++++++++
+ .../repository/TestPanelRepository.java       | 35 ++++++++++++
+ .../service/TestDailyElectricityService.java  | 35 ++++++++++++
+ .../service/TestHourlyElectricityService.java | 33 ++++++++++++
+ .../techtrial/service/TestPanelService.java   | 34 ++++++++++++
+ 21 files changed, 413 insertions(+), 21 deletions(-)
+ mode change 100755 => 100644 gradlew
+ mode change 100755 => 100644 src/main/java/com/crossover/techtrial/exceptions/GlobalExceptionHandler.java
+ create mode 100644 src/main/java/com/crossover/techtrial/repository/DailyElectricityMapper.java
+ create mode 100644 src/main/java/com/crossover/techtrial/repository/DailyElectricityRepository.java
+ create mode 100644 src/main/java/com/crossover/techtrial/repository/DailyElectricityRepositoryImpl.java
+ create mode 100644 src/main/java/com/crossover/techtrial/service/DailyElectricityService.java
+ create mode 100644 src/main/java/com/crossover/techtrial/service/DailyElectricityServiceImpl.java
+ mode change 100755 => 100644 src/main/resources/db/changelog/db.changelog-1.0.xml
+ mode change 100755 => 100644 src/main/resources/db/changelog/db.changelog-master.xml
+ create mode 100644 src/test/java/com/crossover/techtrial/repository/TestDailyElectricityrepository.java
+ create mode 100644 src/test/java/com/crossover/techtrial/repository/TestHourlyElectricityRepository.java
+ create mode 100644 src/test/java/com/crossover/techtrial/repository/TestPanelRepository.java
+ create mode 100644 src/test/java/com/crossover/techtrial/service/TestDailyElectricityService.java
+ create mode 100644 src/test/java/com/crossover/techtrial/service/TestHourlyElectricityService.java
+ create mode 100644 src/test/java/com/crossover/techtrial/service/TestPanelService.java
+
+diff --git a/gradlew b/gradlew
+old mode 100755
+new mode 100644
+diff --git a/src/main/java/com/crossover/techtrial/controller/PanelController.java b/src/main/java/com/crossover/techtrial/controller/PanelController.java
+index d308f18..d28e2d5 100644
+--- a/src/main/java/com/crossover/techtrial/controller/PanelController.java
++++ b/src/main/java/com/crossover/techtrial/controller/PanelController.java
+@@ -1,12 +1,9 @@
+ package com.crossover.techtrial.controller;
+ 
+-import com.crossover.techtrial.dto.DailyElectricity;
+-import com.crossover.techtrial.model.HourlyElectricity;
+-import com.crossover.techtrial.model.Panel;
+-import com.crossover.techtrial.service.HourlyElectricityService;
+-import com.crossover.techtrial.service.PanelService;
+-import java.util.ArrayList;
+ import java.util.List;
++
++import javax.validation.constraints.Size;
++
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.data.domain.Page;
+ import org.springframework.data.domain.Pageable;
+@@ -18,6 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RestController;
+ 
++import com.crossover.techtrial.dto.DailyElectricity;
++import com.crossover.techtrial.model.HourlyElectricity;
++import com.crossover.techtrial.model.Panel;
++import com.crossover.techtrial.service.DailyElectricityService;
++import com.crossover.techtrial.service.HourlyElectricityService;
++import com.crossover.techtrial.service.PanelService;
++
+ /**
+  * Panel Controller for all Rest APIs related to Panel.
+  * @author Crossover
+@@ -33,6 +37,9 @@ public class PanelController {
+   @Autowired
+   HourlyElectricityService hourlyElectricityService;
+   
++  @Autowired
++  DailyElectricityService dailyElectricityService;
++  
+   /**
+    * Register a Panel to System and start receiving the electricity statistics.
+    * @param panel to register.
+@@ -64,7 +71,7 @@ public class PanelController {
+   
+   @GetMapping(path = "/api/panels/{panel-serial}/hourly")
+   public ResponseEntity<?> hourlyElectricity(
+-      @PathVariable(value = "banel-serial") String panelSerial,
++      @PathVariable(value = "panel-serial" ) String panelSerial,
+       @PageableDefault(size = 5,value = 0) Pageable pageable) {
+     Panel panel = panelService.findBySerial(panelSerial);
+     if (panel == null) {
+@@ -85,11 +92,16 @@ public class PanelController {
+   @GetMapping(path = "/api/panels/{panel-serial}/daily")
+   public ResponseEntity<List<DailyElectricity>> allDailyElectricityFromYesterday(
+       @PathVariable(value = "panel-serial") String panelSerial) {
+-    List<DailyElectricity> dailyElectricityForPanel = new ArrayList<>();
+-    /**
+-     * IMPLEMENT THE LOGIC HERE and FEEL FREE TO MODIFY OR ADD CODE TO RELATED CLASSES.
+-     * MAKE SURE NOT TO CHANGE THE SIGNATURE OF ANY END POINT. NO PAGINATION IS NEEDED HERE.
+-     */
++	  /**
++	     * IMPLEMENT THE LOGIC HERE and FEEL FREE TO MODIFY OR ADD CODE TO RELATED CLASSES.
++	     * MAKE SURE NOT TO CHANGE THE SIGNATURE OF ANY END POINT. NO PAGINATION IS NEEDED HERE.
++	     */
++	  Panel panel = panelService.findBySerial(panelSerial);
++	    if (panel == null) {
++	      return ResponseEntity.notFound().build(); 
++	    }
++    List<DailyElectricity> dailyElectricityForPanel = dailyElectricityService.getDaliyElectricityByPanelId(panel.getId());
++   
+     return ResponseEntity.ok(dailyElectricityForPanel);
+   }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/crossover/techtrial/dto/DailyElectricity.java b/src/main/java/com/crossover/techtrial/dto/DailyElectricity.java
+index b0e0ea9..ba0e748 100644
+--- a/src/main/java/com/crossover/techtrial/dto/DailyElectricity.java
++++ b/src/main/java/com/crossover/techtrial/dto/DailyElectricity.java
+@@ -22,8 +22,17 @@ public class DailyElectricity implements Serializable {
+   private Long min;
+   
+   private Long max;
++  private Long id;
+ 
+-  public LocalDate getDate() {
++  public Long getId() {
++	return id;
++}
++
++public void setId(Long id) {
++	this.id = id;
++}
++
++public LocalDate getDate() {
+     return date;
+   }
+ 
+diff --git a/src/main/java/com/crossover/techtrial/exceptions/GlobalExceptionHandler.java b/src/main/java/com/crossover/techtrial/exceptions/GlobalExceptionHandler.java
+old mode 100755
+new mode 100644
+diff --git a/src/main/java/com/crossover/techtrial/model/HourlyElectricity.java b/src/main/java/com/crossover/techtrial/model/HourlyElectricity.java
+index 275f765..6b8ae5e 100644
+--- a/src/main/java/com/crossover/techtrial/model/HourlyElectricity.java
++++ b/src/main/java/com/crossover/techtrial/model/HourlyElectricity.java
+@@ -1,6 +1,8 @@
+ package com.crossover.techtrial.model;
+ 
+ import com.fasterxml.jackson.annotation.JsonIgnore;
++import com.fasterxml.jackson.annotation.JsonIgnoreType;
++
+ import java.io.Serializable;
+ import java.time.LocalDateTime;
+ import javax.persistence.Column;
+@@ -22,6 +24,7 @@ import javax.persistence.Table;
+ 
+ @Entity
+ @Table(name = "hourly_electricity")
++@JsonIgnoreType
+ public class HourlyElectricity implements Serializable {
+ 
+   private static final long serialVersionUID = -575347909928592140L;
+diff --git a/src/main/java/com/crossover/techtrial/model/Panel.java b/src/main/java/com/crossover/techtrial/model/Panel.java
+index 34fb762..821c6b7 100644
+--- a/src/main/java/com/crossover/techtrial/model/Panel.java
++++ b/src/main/java/com/crossover/techtrial/model/Panel.java
+@@ -27,13 +27,13 @@ public class Panel implements Serializable {
+   Long id;
+ 
+   @NotNull
+-  @Column(name = "serial")
++  @Column(name = "serial",length=16)
+   String serial;
+ 
+-  @Column(name = "longitude")
++  @Column(name = "longitude",scale=6)
+   Double longitude;
+ 
+-  @Column(name = "latitude")
++  @Column(name = "latitude",scale=6)
+   Double latitude;
+ 
+   @Nullable
+diff --git a/src/main/java/com/crossover/techtrial/repository/DailyElectricityMapper.java b/src/main/java/com/crossover/techtrial/repository/DailyElectricityMapper.java
+new file mode 100644
+index 0000000..429d067
+--- /dev/null
++++ b/src/main/java/com/crossover/techtrial/repository/DailyElectricityMapper.java
+@@ -0,0 +1,37 @@
++package com.crossover.techtrial.repository;
++
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.time.LocalDate;
++import java.time.format.DateTimeFormatter;
++import java.util.ArrayList;
++import java.util.List;
++import org.springframework.jdbc.core.RowMapper;
++import org.springframework.stereotype.Service;
++
++import com.crossover.techtrial.dto.DailyElectricity;
++
++@Service
++public class DailyElectricityMapper implements RowMapper<List<DailyElectricity>>{
++
++	@Override
++	public List<DailyElectricity> mapRow(ResultSet rs, int rowNum) throws SQLException {
++		// TODO Auto-generated method stub
++		List<DailyElectricity> dailyList= new ArrayList<>();
++		while (rs.next()) {
++			DailyElectricity daily = new DailyElectricity();
++			daily.setAverage(rs.getDouble(6));
++			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
++			LocalDate date = LocalDate.parse(rs.getString(2), formatter);
++			daily.setDate(date);
++			daily.setMax(rs.getLong(5));
++			daily.setMin(rs.getLong(4));
++			daily.setSum(rs.getLong(3));
++			daily.setId(rs.getLong(1));
++			dailyList.add(daily);
++		}
++		return dailyList;
++	}
++	
++
++}
+diff --git a/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepository.java b/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepository.java
+new file mode 100644
+index 0000000..3c07272
+--- /dev/null
++++ b/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepository.java
+@@ -0,0 +1,13 @@
++package com.crossover.techtrial.repository;
++
++import java.util.List;
++
++import org.springframework.data.rest.core.annotation.RestResource;
++import org.springframework.stereotype.Repository;
++
++import com.crossover.techtrial.dto.DailyElectricity;
++
++@Repository
++public interface DailyElectricityRepository {
++	List<DailyElectricity> retrieveDailyData(Long id);
++}
+diff --git a/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepositoryImpl.java b/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepositoryImpl.java
+new file mode 100644
+index 0000000..0191b2b
+--- /dev/null
++++ b/src/main/java/com/crossover/techtrial/repository/DailyElectricityRepositoryImpl.java
+@@ -0,0 +1,28 @@
++package com.crossover.techtrial.repository;
++
++import java.util.List;
++
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.data.rest.core.annotation.RestResource;
++import org.springframework.jdbc.core.JdbcTemplate;
++import org.springframework.stereotype.Repository;
++
++import com.crossover.techtrial.dto.DailyElectricity;
++
++
++@Repository
++public class DailyElectricityRepositoryImpl implements DailyElectricityRepository {
++	@Autowired
++  private JdbcTemplate jdbcTemplate;
++
++	
++	@Override
++	public List<DailyElectricity> retrieveDailyData(Long id) {
++
++		return jdbcTemplate.queryForObject(
++				"select mydata.panel_id, mydata.reading_at, sum(mydata.generated_electricity) dailysum, min(mydata.generated_electricity) dailymin, MAX(mydata.generated_electricity) dailymax, avg(mydata.generated_electricity) dailyavg from ( SELECT cast(DATE_FORMAT(reading_at, '%Y-%m-%d') as char) reading_at, panel_id, generated_electricity from hourly_electricity) mydata where mydata.panel_id=? group by mydata.reading_at order by mydata.reading_at",
++				 new Object[] { id },new DailyElectricityMapper());
++
++	}
++
++}
+diff --git a/src/main/java/com/crossover/techtrial/service/DailyElectricityService.java b/src/main/java/com/crossover/techtrial/service/DailyElectricityService.java
+new file mode 100644
+index 0000000..6bfb201
+--- /dev/null
++++ b/src/main/java/com/crossover/techtrial/service/DailyElectricityService.java
+@@ -0,0 +1,12 @@
++package com.crossover.techtrial.service;
++
++import java.util.List;
++
++import com.crossover.techtrial.dto.DailyElectricity;
++
++
++
++public interface  DailyElectricityService {
++
++	List<DailyElectricity> getDaliyElectricityByPanelId(Long panelId);
++}
+diff --git a/src/main/java/com/crossover/techtrial/service/DailyElectricityServiceImpl.java b/src/main/java/com/crossover/techtrial/service/DailyElectricityServiceImpl.java
+new file mode 100644
+index 0000000..d967401
+--- /dev/null
++++ b/src/main/java/com/crossover/techtrial/service/DailyElectricityServiceImpl.java
+@@ -0,0 +1,23 @@
++package com.crossover.techtrial.service;
++
++import java.util.List;
++
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.stereotype.Service;
++
++import com.crossover.techtrial.dto.DailyElectricity;
++import com.crossover.techtrial.repository.DailyElectricityRepository;
++
++@Service
++public class DailyElectricityServiceImpl implements DailyElectricityService {
++
++	@Autowired
++	DailyElectricityRepository dailyElectricityRepository;
++
++	@Override
++	public List<DailyElectricity> getDaliyElectricityByPanelId(Long panelId) {
++		// TODO Auto-generated method stub
++		return dailyElectricityRepository.retrieveDailyData(panelId);
++	}
++
++}
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+index c7cc890..5d05b73 100644
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -2,7 +2,7 @@
+ #Database connection Parameters
+ spring.datasource.url: jdbc:mysql://localhost:3306/crosssolar?createDatabaseIfNotExist=true&useSSL=false
+ spring.datasource.username=root
+-spring.datasource.password=
++spring.datasource.password=root
+ spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+ 
+ spring.jpa.hibernate.ddl-auto=none
+diff --git a/src/main/resources/db/changelog/db.changelog-1.0.xml b/src/main/resources/db/changelog/db.changelog-1.0.xml
+old mode 100755
+new mode 100644
+diff --git a/src/main/resources/db/changelog/db.changelog-master.xml b/src/main/resources/db/changelog/db.changelog-master.xml
+old mode 100755
+new mode 100644
+diff --git a/src/test/java/com/crossover/techtrial/controller/PanelControllerTest.java b/src/test/java/com/crossover/techtrial/controller/PanelControllerTest.java
+index a1deacf..5126462 100644
+--- a/src/test/java/com/crossover/techtrial/controller/PanelControllerTest.java
++++ b/src/test/java/com/crossover/techtrial/controller/PanelControllerTest.java
+@@ -1,6 +1,16 @@
+ package com.crossover.techtrial.controller;
+ 
++import com.crossover.techtrial.dto.DailyElectricity;
++import com.crossover.techtrial.model.HourlyElectricity;
+ import com.crossover.techtrial.model.Panel;
++
++import java.net.URI;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++
+ import org.junit.Assert;
+ import org.junit.Before;
+ import org.junit.Test;
+@@ -10,14 +20,24 @@ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.boot.test.context.SpringBootTest;
+ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+ import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.core.ParameterizedTypeReference;
++import org.springframework.data.domain.Page;
++import org.springframework.data.domain.Pageable;
++import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+ import org.springframework.http.HttpEntity;
+ import org.springframework.http.HttpHeaders;
+ import org.springframework.http.MediaType;
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+ import org.springframework.test.web.servlet.MockMvc;
+-
++import org.springframework.test.web.servlet.MvcResult;
++import org.springframework.test.web.servlet.RequestBuilder;
++import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++import org.springframework.web.servlet.View;
++import org.springframework.web.servlet.ViewResolver;
++import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
++import org.springframework.web.util.UriComponentsBuilder;
+ 
+ 
+ /**
+@@ -29,7 +49,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+ @RunWith(SpringJUnit4ClassRunner.class)
+ @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+ public class PanelControllerTest {
+-  
++   
+   MockMvc mockMvc;
+   
+   @Mock
+@@ -40,9 +60,15 @@ public class PanelControllerTest {
+ 
+   @Before
+   public void setup() throws Exception {
+-    mockMvc = MockMvcBuilders.standaloneSetup(panelController).build();
++    mockMvc = MockMvcBuilders.standaloneSetup(panelController).setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
++            .setViewResolvers(new ViewResolver() {
++                @Override
++                public View resolveViewName(String viewName, Locale locale) throws Exception {
++                    return new MappingJackson2JsonView();
++                }
++            })
++            .build();
+   }
+-
+   @Test
+   public void testPanelShouldBeRegistered() throws Exception {
+     HttpEntity<Object> panel = getHttpEntity(
+@@ -52,6 +78,25 @@ public class PanelControllerTest {
+         "/api/register", panel, Panel.class);
+     Assert.assertEquals(202,response.getStatusCode().value());
+   }
++  
++  @Test
++  public void testHourlyElectricity() throws Exception {
++	  MvcResult mvcResult =   mockMvc.perform(MockMvcRequestBuilders.get("/api/panels/1234567890123456/hourly").
++	            contentType(MediaType.APPLICATION_JSON))
++	            .andReturn();
++	 // System.out.println("resi:"+mvcResult.getResponse().getContentLength());
++  }
++ 
++  @Test
++  public void testDailyElectricity() throws Exception {
++	  Map<String, Object> params = new HashMap();
++	  params.put("content-type", "application/json");
++	  ResponseEntity<Object[]> responseEntity = template.getForEntity("/api/panels/1234567890123456/daily",Object[].class,params);
++	  Object[] arr =responseEntity.getBody();
++		  LinkedHashMap m= (LinkedHashMap) arr[0];
++		  Assert.assertEquals(1,m.get("id"));
++  }
++  
+ 
+   private HttpEntity<Object> getHttpEntity(Object body) {
+     HttpHeaders headers = new HttpHeaders();
+diff --git a/src/test/java/com/crossover/techtrial/repository/TestDailyElectricityrepository.java b/src/test/java/com/crossover/techtrial/repository/TestDailyElectricityrepository.java
+new file mode 100644
+index 0000000..9fd0df8
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/repository/TestDailyElectricityrepository.java
+@@ -0,0 +1,38 @@
++package com.crossover.techtrial.repository;
++
++import java.util.List;
++
++import org.junit.Assert;
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++
++import com.crossover.techtrial.dto.DailyElectricity;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++//@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestDailyElectricityrepository {
++
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private DailyElectricityRepository dailyElectricityrepository;
++	
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(dailyElectricityrepository).build();
++	  }
++	  @Test
++	  public void testRetrieveDailyData() {
++		  
++	  }
++}
+diff --git a/src/test/java/com/crossover/techtrial/repository/TestHourlyElectricityRepository.java b/src/test/java/com/crossover/techtrial/repository/TestHourlyElectricityRepository.java
+new file mode 100644
+index 0000000..8eaffcf
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/repository/TestHourlyElectricityRepository.java
+@@ -0,0 +1,35 @@
++package com.crossover.techtrial.repository;
++
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++import com.crossover.techtrial.controller.PanelController;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestHourlyElectricityRepository {
++
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private HourlyElectricityRepository hourlyElectricityRepository;
++	  
++	  
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(hourlyElectricityRepository).build();
++	  }
++	  @Test
++	  public void testFindAllByPanelIdOrderByReadingAtDesc() {
++		
++	  }
++}
+diff --git a/src/test/java/com/crossover/techtrial/repository/TestPanelRepository.java b/src/test/java/com/crossover/techtrial/repository/TestPanelRepository.java
+new file mode 100644
+index 0000000..94b9a01
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/repository/TestPanelRepository.java
+@@ -0,0 +1,35 @@
++package com.crossover.techtrial.repository;
++
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++import com.crossover.techtrial.controller.PanelController;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestPanelRepository {
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private PanelRepository panelRepository;
++	  
++	
++
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(panelRepository).build();
++	  }
++	  @Test
++	  public void testFindBySerial() {
++		
++	  }
++}
+diff --git a/src/test/java/com/crossover/techtrial/service/TestDailyElectricityService.java b/src/test/java/com/crossover/techtrial/service/TestDailyElectricityService.java
+new file mode 100644
+index 0000000..fc0e8f3
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/service/TestDailyElectricityService.java
+@@ -0,0 +1,35 @@
++package com.crossover.techtrial.service;
++
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++import com.crossover.techtrial.controller.PanelController;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestDailyElectricityService {
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private DailyElectricityService dailyElectricityService;
++	 
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(dailyElectricityService).build();
++	  }
++	  @Test
++	  public void retrieveDailyData() {
++		  
++		 //List<DailyElectricity> list= dailyElectricityrepository.retrieveDailyData(1l);
++//System.out.println(list);
++	  }
++}
+diff --git a/src/test/java/com/crossover/techtrial/service/TestHourlyElectricityService.java b/src/test/java/com/crossover/techtrial/service/TestHourlyElectricityService.java
+new file mode 100644
+index 0000000..ae740c3
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/service/TestHourlyElectricityService.java
+@@ -0,0 +1,33 @@
++package com.crossover.techtrial.service;
++
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++import com.crossover.techtrial.controller.PanelController;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestHourlyElectricityService {
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private HourlyElectricityService hourlyElectricityService;
++	  
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(hourlyElectricityService).build();
++	  }
++	  @Test
++	  public void testGetAllHourlyElectricityByPanelId() {
++		
++	  }
++}
+diff --git a/src/test/java/com/crossover/techtrial/service/TestPanelService.java b/src/test/java/com/crossover/techtrial/service/TestPanelService.java
+new file mode 100644
+index 0000000..407736f
+--- /dev/null
++++ b/src/test/java/com/crossover/techtrial/service/TestPanelService.java
+@@ -0,0 +1,34 @@
++package com.crossover.techtrial.service;
++
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import org.mockito.Mock;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++
++import com.crossover.techtrial.controller.PanelController;
++
++@RunWith(SpringJUnit4ClassRunner.class)
++@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
++public class TestPanelService {
++	 MockMvc mockMvc;
++	  
++	  @Mock
++	  private PanelService panelService;
++	  
++	  
++	  @Before
++	  public void setup() throws Exception {
++	    mockMvc = MockMvcBuilders.standaloneSetup(panelService).build();
++	  }
++	  @Test
++	  public void testPanelRegister() {
++		  
++	  }
++}
+-- 
+2.18.0.windows.1
+
+
+From ac3c6af242c5304784ce1e9a2f636e73e508ea7f Mon Sep 17 00:00:00 2001
+From: vivek raut <vivek.raut999@gmail.com>
+Date: Sun, 24 Jun 2018 17:42:41 +0530
+Subject: [PATCH 2/2] My submission
+XOV: XO_0_0_1
+
+---
+ src/main/java/com/crossover/techtrial/model/Panel.java | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/main/java/com/crossover/techtrial/model/Panel.java b/src/main/java/com/crossover/techtrial/model/Panel.java
+index 821c6b7..2c10aff 100644
+--- a/src/main/java/com/crossover/techtrial/model/Panel.java
++++ b/src/main/java/com/crossover/techtrial/model/Panel.java
+@@ -7,6 +7,7 @@ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType;
+ import javax.persistence.Id;
+ import javax.persistence.Table;
++import javax.persistence.UniqueConstraint;
+ import javax.validation.constraints.NotNull;
+ import org.springframework.lang.Nullable;
+ 
+@@ -27,7 +28,7 @@ public class Panel implements Serializable {
+   Long id;
+ 
+   @NotNull
+-  @Column(name = "serial",length=16)
++  @Column(name = "serial",length=16,unique=true)
+   String serial;
+ 
+   @Column(name = "longitude",scale=6)
+-- 
+2.18.0.windows.1
+
